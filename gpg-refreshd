@@ -1,0 +1,49 @@
+#!/bin/zsh
+
+if [[ ! -z "$@" ]]; then
+	cat <<EOD
+gpg-refreshd: A daemon for keeping your keyring fresh and updated.
+
+Refreshes a random key at a random time over Tor, going through your
+keyring around once a week. It picks the key uniformly, though, so there
+is no guarantee that any one key will ever be refreshed. The alternative
+would allow an adversary to see which subset of keys gets refreshed
+every week, which would be bad.
+EOD
+	exit 0
+fi
+
+if [[ ! -z "`pgrep -u $UID gpg-refreshd|grep -v $$`" ]]; then
+	echo "$0: Already running." >&2
+	exit 1
+fi
+
+# For rand48
+zmodload zsh/mathfunc
+
+while true; do
+	# Get all keyids, appropriately permuted.
+	ks=(`gpg --with-colons -k | grep "^pub" | cut -d: -f5 | \
+		shuf --random-source=/dev/urandom`)
+
+	# Get a good^H^H^H^Hbetter seed for how long to wait.
+	seed=`head -c 6 /dev/urandom|sha256sum|head -c 12`
+
+	# Sleep a random amount of time such that, on average, n keys,
+	# where n is the size of your keychain, are refreshed per week.
+	n=$(( rand48(seed) * 2 * 60 * 60 * 24 * 7 / ${#ks} ))
+	# Having $n a floating point number prevents distinguishing
+	# refreshes that start around the same whole second apart.
+
+	# Never sleep less than 10 minutes, which would allow Tor
+	# circuit reuse. (Change this if you've changed the defaults in
+	# torrc (MaxCircuitDirtiness))
+	if [[ $n -le 600 ]]; then
+		: $(( $n += 601 ))
+	fi
+	echo "Sleeping $n seconds."
+	sleep $n
+
+	# Get a random key over Tor.
+	torify gpg --recv-keys ${ks[1]}
+done

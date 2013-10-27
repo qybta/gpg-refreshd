@@ -1,0 +1,10 @@
+[Unit]
+Description=A daemon for keeping your keyring fresh and updated.
+After=tor.service
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Type=simple
+ExecStart=/home/qybta/bin/gpg-refreshd

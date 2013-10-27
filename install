@@ -1,0 +1,10 @@
+#!/bin/zsh -x
+mkdir -p ~/bin
+cp gpg-refreshd ~/bin
+
+if [[ -e `which systemctl` ]]; then
+	mkdir -p ~/.config/systemd/user
+	cp gpg-refreshd.service ~/.config/systemd/user
+	sed -i s/qybta/$USER/ ~/.config/systemd/user/gpg-refreshd.service
+	echo "To start on login: systemctl --user enable gpg-refreshd.service"
+fi
