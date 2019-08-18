@@ -1,3 +1,4 @@
+
 #!/bin/zsh
 
 if [[ ! -z "$@" ]]; then
@@ -20,7 +21,7 @@ fi
 
 # For rand48
 zmodload zsh/mathfunc
-
+gpg --refresh-keys
 while true; do
 	# Get all keyids, appropriately permuted.
 	ks=(`gpg --with-colons -k | grep "^pub" | cut -d: -f5 | \
